@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { images, notes } = req.body;
+    const { images, notes } = req.body || {};
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return res.status(400).json({ error: "At least one image is required" });
@@ -22,10 +22,14 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+      return res.status(500).json({ error: "GEMINI_API_KEY not configured on the server" });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    // Trim just in case
+    const cleanKey = apiKey.trim();
+
+    const genAI = new GoogleGenerativeAI(cleanKey);
+    // Use a currently stable flash model
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `You are a thrift store / resale expert helping someone decide whether to buy an item to flip for profit on Facebook Marketplace, Craigslist, or Vinted (local sales only, no shipping).
@@ -63,6 +67,10 @@ Be realistic about local LA / Southern California resale prices. If you can't se
       };
     }).filter(Boolean);
 
+    if (imageParts.length === 0) {
+      return res.status(400).json({ error: "Could not process any of the uploaded images" });
+    }
+
     const result = await model.generateContent([prompt, ...imageParts]);
     const text = result.response.text();
 
@@ -76,7 +84,10 @@ Be realistic about local LA / Southern California resale prices. If you can't se
 
     return res.status(200).json({ analysis });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message || "Analysis failed" });
+    console.error("Analyze error:", err);
+    return res.status(500).json({ 
+      error: err.message || "Analysis failed",
+      details: err.toString()
+    });
   }
 }
