@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -20,19 +18,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "At least one image is required" });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!apiKey) {
       return res.status(500).json({ error: "GEMINI_API_KEY not configured on the server" });
     }
 
-    // Trim just in case
-    const cleanKey = apiKey.trim();
-
-    const genAI = new GoogleGenerativeAI(cleanKey);
-    // Use a currently stable flash model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const prompt = `You are a thrift store / resale expert helping someone decide whether to buy an item to flip for profit on Facebook Marketplace, Craigslist, or Vinted (local sales only, no shipping).
+    // Build the parts for Gemini
+    const parts = [
+      {
+        text: `You are a thrift store / resale expert helping someone decide whether to buy an item to flip for profit on Facebook Marketplace, Craigslist, or Vinted (local sales only, no shipping).
 
 Analyze the photo(s) carefully. Look for:
 - What the item is
@@ -54,25 +48,59 @@ Then give a clear, practical response in this exact JSON format (no extra text o
 
 Notes from the user: ${notes || "None"}
 
-Be realistic about local LA / Southern California resale prices. If you can't see enough detail, say so.`;
+Be realistic about local LA / Southern California resale prices. If you can't see enough detail, say so.`
+      }
+    ];
 
-    const imageParts = images.slice(0, 4).map((dataUrl) => {
+    // Add up to 4 images
+    for (const dataUrl of images.slice(0, 4)) {
       const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
-      if (!matches) return null;
-      return {
-        inlineData: {
-          data: matches[2],
-          mimeType: matches[1],
-        },
-      };
-    }).filter(Boolean);
+      if (matches) {
+        parts.push({
+          inline_data: {
+            mime_type: matches[1],
+            data: matches[2]
+          }
+        });
+      }
+    }
 
-    if (imageParts.length === 0) {
+    if (parts.length === 1) {
       return res.status(400).json({ error: "Could not process any of the uploaded images" });
     }
 
-    const result = await model.generateContent([prompt, ...imageParts]);
-    const text = result.response.text();
+    // Call Gemini REST API directly
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: parts
+          }
+        ],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 1024
+        }
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Gemini API error:", data);
+      return res.status(500).json({
+        error: data.error?.message || "Gemini API returned an error",
+        details: data
+      });
+    }
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     let analysis;
     try {
@@ -85,7 +113,7 @@ Be realistic about local LA / Southern California resale prices. If you can't se
     return res.status(200).json({ analysis });
   } catch (err) {
     console.error("Analyze error:", err);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: err.message || "Analysis failed",
       details: err.toString()
     });
