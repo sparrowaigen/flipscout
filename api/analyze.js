@@ -18,14 +18,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "At least one image is required" });
     }
 
-    const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+    const apiKey = (process.env.OPENAI_API_KEY || "").trim();
     if (!apiKey) {
-      return res.status(500).json({ error: "GEMINI_API_KEY not configured on the server" });
+      return res.status(500).json({ error: "OPENAI_API_KEY not configured on the server" });
     }
 
-    // Build the parts for Gemini
-    const parts = [
+    // Build content array for OpenAI vision
+    const content = [
       {
+        type: "text",
         text: `You are a thrift store / resale expert helping someone decide whether to buy an item to flip for profit on Facebook Marketplace, Craigslist, or Vinted (local sales only, no shipping).
 
 Analyze the photo(s) carefully. Look for:
@@ -56,51 +57,50 @@ Be realistic about local LA / Southern California resale prices. If you can't se
     for (const dataUrl of images.slice(0, 4)) {
       const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
       if (matches) {
-        parts.push({
-          inline_data: {
-            mime_type: matches[1],
-            data: matches[2]
+        content.push({
+          type: "image_url",
+          image_url: {
+            url: dataUrl,
+            detail: "low"
           }
         });
       }
     }
 
-    if (parts.length === 1) {
+    if (content.length === 1) {
       return res.status(400).json({ error: "Could not process any of the uploaded images" });
     }
 
-    // Call Gemini REST API directly
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-    const response = await fetch(url, {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        contents: [
+        model: "gpt-4o-mini",
+        messages: [
           {
-            parts: parts
+            role: "user",
+            content: content
           }
         ],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 1024
-        }
+        max_tokens: 800,
+        temperature: 0.3
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Gemini API error:", data);
+      console.error("OpenAI API error:", data);
       return res.status(500).json({
-        error: data.error?.message || "Gemini API returned an error",
+        error: data.error?.message || "OpenAI API returned an error",
         details: data
       });
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = data.choices?.[0]?.message?.content || "";
 
     let analysis;
     try {
