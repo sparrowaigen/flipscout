@@ -12,7 +12,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { images, notes } = req.body || {};
+    // Properly parse body for pure Vercel functions
+    let body = req.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        return res.status(400).json({ error: "Invalid JSON body" });
+      }
+    }
+    if (!body || typeof body !== "object") {
+      // Fallback for some Vercel runtimes
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const raw = Buffer.concat(chunks).toString();
+      try {
+        body = JSON.parse(raw);
+      } catch (e) {
+        return res.status(400).json({ error: "Could not parse request body" });
+      }
+    }
+
+    const { images, notes } = body || {};
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return res.status(400).json({ error: "At least one image is required" });
@@ -55,8 +78,7 @@ Be realistic about local LA / Southern California resale prices. If you can't se
 
     // Add up to 4 images
     for (const dataUrl of images.slice(0, 4)) {
-      const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
-      if (matches) {
+      if (typeof dataUrl === "string" && dataUrl.startsWith("data:")) {
         content.push({
           type: "image_url",
           image_url: {
@@ -93,7 +115,7 @@ Be realistic about local LA / Southern California resale prices. If you can't se
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("OpenAI API error:", data);
+      console.error("OpenAI API error:", JSON.stringify(data));
       return res.status(500).json({
         error: data.error?.message || "OpenAI API returned an error",
         details: data
@@ -115,7 +137,7 @@ Be realistic about local LA / Southern California resale prices. If you can't se
     console.error("Analyze error:", err);
     return res.status(500).json({
       error: err.message || "Analysis failed",
-      details: err.toString()
+      details: String(err)
     });
   }
 }
