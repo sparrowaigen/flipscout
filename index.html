@@ -116,12 +116,26 @@
     .status.loading { display: block; background: rgba(139,92,246,0.15); color: #c4b5fd; }
     .status.error { display: block; background: rgba(239,68,68,0.15); color: #fca5a5; }
     .status.success { display: block; background: rgba(34,197,94,0.15); color: #86efac; }
+    .about {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>FlipScout</h1>
     <p>Quick decisions. Real flips.</p>
+  </div>
+
+  <div class="about">
+    FlipScout is a mobile tool for thrift and garage-sale flipping. Take a photo in the aisle. Get a quick-flip price (sell it fast) and a patient-flip price (wait for more), then tap Buy / Maybe / Skip. Everything is logged so you can look back later. Honest limit: the AI estimates are starting points, not guarantees. Local comps and condition still matter.
   </div>
 
   <div class="card" id="scanCard">
