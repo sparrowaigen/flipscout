@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>How I built FlipScout</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100dvh; padding: 24px 16px 40px;
+      line-height: 1.55; max-width: 560px; margin: 0 auto;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+    h2 {
+      font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin: 24px 0 8px;
+    }
+    p { margin-bottom: 12px; color: #e2e8f0; font-size: 0.95rem; }
+    .back { display: inline-block; margin-bottom: 20px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <a class="back" href="/">← Back to FlipScout</a>
+
+  <h1>How I built FlipScout</h1>
+  <p class="sub">A short writeup for anyone looking at the project.</p>
+
+  <h2>The problem</h2>
+  <p>Standing in a thrift store or garage sale with limited time and mental bandwidth. You need a fast call on whether something is worth buying to flip, without pulling out your phone and doing a full research rabbit hole.</p>
+
+  <h2>What I built</h2>
+  <p>A mobile-first web app. Take 1–4 photos, optionally add a note, and get two price suggestions: a quick-flip price (sell it soon) and a patient-flip price (hold for more). Then tap Buy, Maybe, or Skip. Everything is logged locally so you can look back later.</p>
+
+  <h2>How the AI is used</h2>
+  <p>Photos are sent to a vision model that identifies the item, notes condition and brand if visible, and returns structured price estimates plus a suggested verdict. The numbers are starting points, not final answers.</p>
+
+  <h2>One decision I made</h2>
+  <p>I kept the interface deliberately simple and aisle-friendly. No accounts, no shipping logic, no marketplace posting. Just the decision loop I actually needed while thrifting with my fiancé.</p>
+
+  <h2>Honest limit</h2>
+  <p>The AI estimates can be wrong. Local sold comps, real condition, and timing still matter more than any model output. The app is a decision aid, not a guarantee.</p>
+
+  <p style="margin-top: 32px; color: var(--muted); font-size: 0.85rem;">
+    Built with help from Grok. Live at <a href="https://flipscout-4bm8.vercel.app">flipscout-4bm8.vercel.app</a>
+  </p>
+</body>
+</html>
