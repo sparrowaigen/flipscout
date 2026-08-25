@@ -127,6 +127,17 @@
       color: var(--muted);
       line-height: 1.5;
     }
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      padding-bottom: 12px;
+    }
+    .footer a {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-decoration: none;
+    }
+    .footer a:hover { color: var(--accent); text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -430,5 +441,9 @@
 
     renderHistory();
   </script>
+
+  <div class="footer">
+    <a href="/how.html">How I built this</a>
+  </div>
 </body>
 </html>
